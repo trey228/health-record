@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Health Record</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EEF3F1; --surface: #FFFFFF; --ink: #17262B; --muted: #55666B;
+    --primary: #1F4E5A; --on-primary: #FFFFFF; --line: #C9D6D2; --danger: #A33A2C;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10191C; --surface: #1A262A; --ink: #E6EEEC; --muted: #9DB0AC;
+      --primary: #7FC3C9; --on-primary: #0D1A1D; --line: #2C3C40; --danger: #F08C7E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10191C; --surface: #1A262A; --ink: #E6EEEC; --muted: #9DB0AC;
+    --primary: #7FC3C9; --on-primary: #0D1A1D; --line: #2C3C40; --danger: #F08C7E;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: inherit; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 18px; line-height: 1.5;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 1.6rem; margin: 4px 0 2px; }
+  .sub { color: var(--muted); margin: 0 0 18px; font-size: 1rem; }
+  nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 18px; }
+  nav button {
+    flex: 0 0 auto; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink); font: inherit; font-size: 1rem; cursor: pointer;
+  }
+  nav button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); border-color: var(--primary); font-weight: 700; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+  form { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 18px; }
+  label { display: block; font-weight: 700; font-size: 0.95rem; margin: 0 0 4px; }
+  input, textarea {
+    width: 100%; font: inherit; color: var(--ink); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px;
+  }
+  textarea { min-height: 90px; resize: vertical; }
+  .primary { width: 100%; padding: 13px; border: none; border-radius: 10px; background: var(--primary); color: var(--on-primary); font: inherit; font-weight: 700; cursor: pointer; }
+  .search { margin-bottom: 14px; }
+  .entry { background: var(--surface); border-left: 5px solid var(--primary); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .entry-top { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+  .entry h3 { margin: 0; font-size: 1.1rem; }
+  .date { color: var(--muted); font-size: 0.95rem; }
+  .notes { margin: 6px 0 0; white-space: pre-wrap; }
+  .actions { display: flex; gap: 4px; flex: 0 0 auto; }
+  .del, .edit { background: none; border: none; font: inherit; font-size: 0.9rem; cursor: pointer; padding: 4px 6px; }
+  .del { color: var(--danger); }
+  .edit { color: var(--primary); }
+  .entry.editing { outline: 2px solid var(--primary); }
+  .cancel { width: 100%; margin-top: 8px; padding: 11px; border: 1px solid var(--line); border-radius: 10px; background: none; color: var(--ink); font: inherit; cursor: pointer; }
+  .empty { color: var(--muted); text-align: center; padding: 24px 8px; }
+  .summary h2 { font-size: 1.2rem; margin: 18px 0 8px; }
+  .summary ul { margin: 0; padding-left: 20px; }
+  .summary li { margin-bottom: 6px; }
+  .backup { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .backup p { color: var(--muted); font-size: 0.95rem; margin: 0 0 10px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .secondary { flex: 1; padding: 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>My Health Record</h1>
+  <p class="sub">Everything stays on this device.</p>
+
+  <nav id="tabs">
+    <button data-cat="summary" aria-pressed="true">For my doctor</button>
+    <button data-cat="meds" aria-pressed="false">Medications</button>
+    <button data-cat="procedures" aria-pressed="false">Procedures</button>
+    <button data-cat="notes" aria-pressed="false">Doctor notes</button>
+    <button data-cat="appts" aria-pressed="false">Appointments</button>
+  </nav>
+
+  <section id="summaryView" class="summary"></section>
+
+  <section id="listView" class="hidden">
+    <form id="addForm">
+      <label for="name" id="nameLabel">Name</label>
+      <input id="name" required autocomplete="off">
+      <label for="date">Date</label>
+      <input id="date" type="date">
+      <label for="desc">Details</label>
+      <textarea id="desc" placeholder="Dose, doctor, what they said, anything to remember"></textarea>
+      <button class="primary" id="saveBtn" type="submit">Save entry</button>
+      <button class="cancel hidden" id="cancelBtn" type="button">Cancel editing</button>
+    </form>
+    <input class="search" id="search" type="search" placeholder="Search this section" aria-label="Search">
+    <div id="list"></div>
+  </section>
+
+  <div class="backup">
+    <p>Back up your record now and then, so nothing is lost if the browser is cleared.</p>
+    <div class="row">
+      <button class="secondary" id="exportBtn" type="button">Download backup</button>
+      <button class="secondary" id="importBtn" type="button">Restore backup</button>
+      <input type="file" id="importFile" accept="application/json" class="hidden">
+    </div>
+  </div>
+</div>
+
+<script>
+  const LABELS = { meds: "Medication", procedures: "Procedure", notes: "Note title", appts: "Appointment with" };
+  const TITLES = { meds: "Current medications", procedures: "Procedures", notes: "Recent doctor notes", appts: "Upcoming appointments" };
+  let current = "summary";
+  let editingId = null;
+
+  function stopEditing() {
+    editingId = null;
+    document.getElementById("addForm").reset();
+    document.getElementById("saveBtn").textContent = "Save entry";
+    document.getElementById("cancelBtn").classList.add("hidden");
+  }
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem("healthRecord") || "{}"); } catch (e) { return {}; }
+  }
+  function save(d) {
+    try { localStorage.setItem("healthRecord", JSON.stringify(d)); } catch (e) { alert("Couldn't save. Download a backup to keep your entries."); }
+  }
+  function esc(s) {
+    return String(s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  function fmt(d) {
+    if (!d) return "No date";
+    const [y, m, day] = d.split("-");
+    return new Date(y, m - 1, day).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  }
+  function sorted(items) { return [...items].sort((a, b) => (b.date || "").localeCompare(a.date || "")); }
+
+  function renderList() {
+    const d = load();
+    const q = document.getElementById("search").value.toLowerCase();
+    const items = sorted(d[current] || []).filter(e => (e.name + " " + (e.desc || "")).toLowerCase().includes(q));
+    document.getElementById("list").innerHTML = items.length
+      ? items.map(e => `
+        <article class="entry${String(e.id) === String(editingId) ? " editing" : ""}">
+          <div class="entry-top"><h3>${esc(e.name)}</h3><div class="actions"><button class="edit" data-id="${e.id}" type="button">Edit</button><button class="del" data-id="${e.id}" type="button">Delete</button></div></div>
+          <div class="date">${fmt(e.date)}</div>
+          ${e.desc ? `<p class="notes">${esc(e.desc)}</p>` : ""}
+        </article>`).join("")
+      : `<p class="empty">${q ? "Nothing matches that search." : "No entries yet. Add your first one above."}</p>`;
+  }
+
+  function renderSummary() {
+    const d = load();
+    const today = new Date().toISOString().slice(0, 10);
+    const sections = [
+      ["meds", sorted(d.meds || [])],
+      ["procedures", sorted(d.procedures || []).slice(0, 5)],
+      ["notes", sorted(d.notes || []).slice(0, 3)],
+      ["appts", sorted(d.appts || []).filter(a => !a.date || a.date >= today).reverse()]
+    ];
+    const any = sections.some(([, list]) => list.length);
+    document.getElementById("summaryView").innerHTML = any
+      ? sections.map(([cat, list]) => list.length ? `
+          <h2>${TITLES[cat]}</h2>
+          <ul>${list.map(e => `<li><strong>${esc(e.name)}</strong>${e.date ? ` (${fmt(e.date)})` : ""}${e.desc ? ` — ${esc(e.desc)}` : ""}</li>`).join("")}</ul>` : "").join("")
+      : `<p class="empty">This page pulls together what your doctor usually asks about. Start by adding your current medications.</p>`;
+  }
+
+  function render() {
+    const isSummary = current === "summary";
+    document.getElementById("summaryView").classList.toggle("hidden", !isSummary);
+    document.getElementById("listView").classList.toggle("hidden", isSummary);
+    if (isSummary) renderSummary();
+    else { document.getElementById("nameLabel").textContent = LABELS[current]; renderList(); }
+  }
+
+  document.getElementById("tabs").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    document.querySelectorAll("#tabs button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    current = b.dataset.cat;
+    stopEditing();
+    document.getElementById("search").value = "";
+    render();
+  });
+
+  document.getElementById("addForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const name = document.getElementById("name").value.trim(); if (!name) return;
+    const d = load(); d[current] = d[current] || [];
+    const fields = { name, date: document.getElementById("date").value, desc: document.getElementById("desc").value.trim() };
+    if (editingId !== null) {
+      const item = d[current].find(x => String(x.id) === String(editingId));
+      if (item) Object.assign(item, fields);
+    } else {
+      d[current].push({ id: Date.now(), ...fields });
+    }
+    save(d); stopEditing(); renderList();
+  });
+
+  document.getElementById("cancelBtn").addEventListener("click", () => { stopEditing(); renderList(); });
+
+  document.getElementById("search").addEventListener("input", renderList);
+
+  document.getElementById("list").addEventListener("click", e => {
+    const editBtn = e.target.closest(".edit");
+    if (editBtn) {
+      const item = (load()[current] || []).find(x => String(x.id) === editBtn.dataset.id);
+      if (!item) return;
+      editingId = item.id;
+      document.getElementById("name").value = item.name;
+      document.getElementById("date").value = item.date || "";
+      document.getElementById("desc").value = item.desc || "";
+      document.getElementById("saveBtn").textContent = "Save changes";
+      document.getElementById("cancelBtn").classList.remove("hidden");
+      renderList();
+      document.getElementById("addForm").scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("name").focus({ preventScroll: true });
+      return;
+    }
+    const b = e.target.closest(".del"); if (!b) return;
+    if (!confirm("Delete this entry?")) return;
+    const d = load(); d[current] = (d[current] || []).filter(x => String(x.id) !== b.dataset.id);
+    if (String(editingId) === b.dataset.id) stopEditing();
+    save(d); renderList();
+  });
+
+  document.getElementById("exportBtn").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(load(), null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "health-record-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+    a.click();
+  });
+  document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importFile").click());
+  document.getElementById("importFile").addEventListener("change", e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try { const data = JSON.parse(r.result); if (confirm("Replace current entries with this backup?")) { save(data); render(); } }
+      catch (err) { alert("That file isn't a health record backup."); }
+    };
+    r.readAsText(f);
+  });
+
+  render();
+</script>
+</body>
+</html>
