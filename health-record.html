@@ -84,6 +84,7 @@
     <button data-cat="procedures" aria-pressed="false">Procedures</button>
     <button data-cat="notes" aria-pressed="false">Doctor notes</button>
     <button data-cat="appts" aria-pressed="false">Appointments</button>
+    <button data-cat="doctors" aria-pressed="false">Doctors</button>
   </nav>
 
   <section id="summaryView" class="summary"></section>
@@ -92,8 +93,10 @@
     <form id="addForm">
       <label for="name" id="nameLabel">Name</label>
       <input id="name" required autocomplete="off">
+      <div id="dateField">
       <label for="date">Date</label>
       <input id="date" type="date">
+      </div>
       <label for="desc">Details</label>
       <textarea id="desc" placeholder="Dose, doctor, what they said, anything to remember"></textarea>
       <button class="primary" id="saveBtn" type="submit">Save entry</button>
@@ -114,8 +117,8 @@
 </div>
 
 <script>
-  const LABELS = { meds: "Medication", procedures: "Procedure", notes: "Note title", appts: "Appointment with" };
-  const TITLES = { meds: "Current medications", procedures: "Procedures", notes: "Recent doctor notes", appts: "Upcoming appointments" };
+  const LABELS = { meds: "Medication", procedures: "Procedure", notes: "Note title", appts: "Appointment with", doctors: "Doctor name" };
+  const TITLES = { meds: "Current medications", procedures: "Procedures", notes: "Recent doctor notes", appts: "Upcoming appointments", doctors: "My doctors" };
   let current = "summary";
   let editingId = null;
 
@@ -163,7 +166,8 @@
       ["meds", sorted(d.meds || [])],
       ["procedures", sorted(d.procedures || []).slice(0, 5)],
       ["notes", sorted(d.notes || []).slice(0, 3)],
-      ["appts", sorted(d.appts || []).filter(a => !a.date || a.date >= today).reverse()]
+      ["appts", sorted(d.appts || []).filter(a => !a.date || a.date >= today).reverse()],
+      ["doctors", (d.doctors || [])]
     ];
     const any = sections.some(([, list]) => list.length);
     document.getElementById("summaryView").innerHTML = any
@@ -178,7 +182,15 @@
     document.getElementById("summaryView").classList.toggle("hidden", !isSummary);
     document.getElementById("listView").classList.toggle("hidden", isSummary);
     if (isSummary) renderSummary();
-    else { document.getElementById("nameLabel").textContent = LABELS[current]; renderList(); }
+    else {
+      document.getElementById("nameLabel").textContent = LABELS[current];
+      const isDoctor = current === "doctors";
+      document.getElementById("dateField").classList.toggle("hidden", isDoctor);
+      document.getElementById("desc").placeholder = isDoctor
+        ? "Specialty, phone, office address, anything to remember"
+        : "Dose, doctor, what they said, anything to remember";
+      renderList();
+    }
   }
 
   document.getElementById("tabs").addEventListener("click", e => {
